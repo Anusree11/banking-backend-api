@@ -46,8 +46,27 @@ def home():
 def create_customer():
     data = request.get_json()
 
+    name= data.get("name")
+    email=data.get("email")
+
+    if not name or not email:
+        return jsonify({
+            "error": "name and email are required"
+        }), 400
+
     conn=get_db_connection()
     cursor= conn.cursor()
+
+    existing = cursor.execute(
+        "SELECT * FROM customers WHERE email= ?",
+        (email,)
+    ).fetchone()
+
+    if existing:
+        conn.close()
+        return jsonify({
+            "error": "Customer already exists"
+        }), 409
 
     cursor.execute(
         "INSERT INTO customers (name, email) VALUES (?, ?)",
@@ -111,8 +130,16 @@ def deposit():
     account_id=data.get("account_id")
     amount=data.get("amount")
 
+    
+
     conn= get_db_connection()
     cursor= conn.cursor()
+
+    if amount is None or amount<=0:
+        conn.close()
+        return jsonify({
+            "error": "Amount must be greater than 0"
+        }), 400
 
     account= cursor.execute(
         "SELECT * FROM accounts WHERE account_id=?", 
@@ -148,6 +175,12 @@ def withdraw():
 
     conn= get_db_connection()
     cursor= conn.cursor()
+
+    if amount is None or amount<=0:
+        conn.close()
+        return jsonify({
+            "error": "Amount must be greater than 0"
+        }), 400
 
     account= cursor.execute(
         "SELECT * FROM accounts WHERE account_id = ?",
