@@ -146,17 +146,62 @@ def withdraw():
     account_id=data.get("account_id")
     amount=data.get("amount")
 
-    for account in accounts:
-        if account["account_id"]==account_id:
-            if account["balance"] < amount:
-                return jsonify ({"error": "Insufficient balance"}), 400
-            
-            account["balance"]-=amount
+    conn= get_db_connection()
+    cursor= conn.cursor()
 
-            return jsonify ({
-                "message": "Withdrawel Succesful",
-                "balance": account["balance"]
-            }), 200
+    account= cursor.execute(
+        "SELECT * FROM accounts WHERE account_id = ?",
+        (account_id,)
+    ).fetchone()
+
+    if not account:
+        conn.close()
+        return jsonify ({
+            "error": "Account not found"
+        }),404
+    
+    if account["balance"]< amount:
+        conn.close()
+        return jsonify ({
+            "error": "Insufficeinet balance"
+        }), 400
+    
+    new_balance = account["balance"] - amount
+
+    cursor.execute(
+        "UPDATE accounts SET balance = ? WHERE account_id =?",
+        (new_balance, account_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "message": "Withdrawal succesful",
+        "balance": new_balance
+    }), 200
+
+@app.route("/balance/<int:account_id>", methods=["GET"])
+def get_balance(account_id):
+    conn=get_db_connection()
+    account = conn.execute(
+        "SELECT * FROM accounts WHERE account_id = ?",
+        (account_id,)
+    ). fetchone()
+    conn.close()
+
+    if not account:
+        return jsonify({
+            "error": "Account not found"
+        }), 404
+    
+    return jsonify({
+        "account_id": account_id,
+        "balance": account["balance"]
+    }), 200
+
+
+    
 
 if __name__ == "__main__":
     init_db()
