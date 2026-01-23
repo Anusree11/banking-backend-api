@@ -29,5 +29,17 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS transactions(
+                   transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   account_id INTEGER,
+                   type TEXT,
+                   amount INTEGER,
+                   timestamp DATETIME DEFAULT CURRETN_TIMESTAMP,
+                   FOREIGN KEY (account_id) REFERENCES accounts (account_id)
+                   )
+
+""")
+
     conn.commit()
     conn.close()

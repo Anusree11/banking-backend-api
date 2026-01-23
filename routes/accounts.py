@@ -58,9 +58,16 @@ def deposit():
 
     new_balance = account["balance"] + amount
 
+    
+
     cursor.execute(
         "UPDATE accounts SET balance = ? WHERE account_id = ?",
         (new_balance, account_id)
+    )
+
+    cursor.execute(
+        "INSERT INTO transactions (account_id, type, amount) VALUES (?,?,?)",
+        (account_id, "deposit", amount)
     )
 
     conn.commit()
@@ -103,6 +110,10 @@ def withdraw():
         "UPDATE accounts SET balance = ? WHERE account_id = ?",
         (new_balance, account_id)
     )
+    cursor.execute(
+    "INSERT INTO transactions (account_id, type, amount) VALUES (?, ?, ?)",
+    (account_id, "withdraw", amount)
+)
 
     conn.commit()
     conn.close()
@@ -111,5 +122,18 @@ def withdraw():
         "message": "Withdrawal successful",
         "balance": new_balance
     }), 200
+
+@accounts_bp.route("/accounts/<int:account_id>/transactions", methods=["GET"])
+def get_transactions(account_id):
+    conn= get_db_connection()
+
+    transactions= conn.execute(
+        "SELECT * FROM transactions WHERE account_id = ? ORDER BY timestamp DESC",
+        (account_id, )
+    ).fetchall()
+
+    conn.close()
+
+    return jsonify([dict(t) for t in transactions]), 200
 
 
